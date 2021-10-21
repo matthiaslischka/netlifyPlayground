@@ -1,4 +1,6 @@
 const faunadb = require("faunadb");
+import fetch from "node-fetch";
+
 exports.handler = async (event) => {
   const q = faunadb.query;
   const client = new faunadb.Client({
@@ -15,9 +17,11 @@ exports.handler = async (event) => {
     };
   }
 
+  let userData = await fetch("https://ipinfo.io/?token=" + process.env.IP_INFO_TOKEN);
+
   await client.query(
     q.Create(q.Collection("request_logs"), {
-      data: { slug: slug, time_utc: new Date().getUTCDate() },
+      data: userData,
     })
   );
 
