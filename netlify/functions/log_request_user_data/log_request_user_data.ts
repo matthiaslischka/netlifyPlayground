@@ -6,32 +6,26 @@ exports.handler = async (event, context) => {
     secret: process.env.FAUNA_SECRET_KEY,
   });
 
-  console.log("event: ");
-  console.log(event);
-
-  console.log("userinfo:");
-  console.log("IP:" + getHeaderInfo(event, "x-bb-ip"));
-  console.log("User Agent: " + getHeaderInfo(event, "user-agent"));
-  console.log("Country: " + getHeaderInfo(event, "x-country"));
-
-  const { slug } = event.queryStringParameters;
-  if (!slug) {
+  const { pathname } = event.queryStringParameters;
+  if (!pathname) {
     return {
       statusCode: 400,
       body: JSON.stringify({
-        message: "slug not provided",
+        message: "pathname not provided",
       }),
     };
   }
 
+  var data = {
+    ip: anonymizeIp(getHeaderInfo(event, "x-bb-ip")),
+    country: getHeaderInfo(event, "x-country"),
+    time: new Date().toISOString(),
+    pathname: pathname,
+  };
+
   await client.query(
     q.Create(q.Collection("request_logs"), {
-      data: {
-        ip: getHeaderInfo(event, "x-bb-ip"),
-        useragent: getHeaderInfo(event, "user-agent"),
-        country: getHeaderInfo(event, "x-country"),
-        time: new Date().toISOString(),
-      },
+      data,
     })
   );
 
@@ -40,4 +34,8 @@ exports.handler = async (event, context) => {
 
 function getHeaderInfo(event, key) {
   if (event && event.headers) return event.headers[key];
+}
+
+function anonymizeIp(ip: string) {
+  return ip.slice(0, ip.lastIndexOf("."));
 }
